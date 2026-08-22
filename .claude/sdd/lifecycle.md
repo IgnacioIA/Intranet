@@ -137,6 +137,12 @@ Tiene criterios de aceptación cuando corresponda.
 No contiene decisiones críticas sin resolver.
 Puede utilizarse como referencia para la implementación.
 
+Cuando la especificación defina una capacidad expuesta mediante una API,
+"tener suficiente precisión para implementar" incluye que el API Contract
+correspondiente esté suficientemente definido. Esto no introduce un nuevo
+estado: es una aclaración del mismo criterio de precisión ya exigido para
+aprobar cualquier especificación.
+
 La aprobación no significa que el código ya exista.
 
 Significa que el comportamiento esperado fue suficientemente definido y
@@ -191,6 +197,7 @@ Seguridad.
 Pruebas.
 Integración.
 Arquitectura.
+Conformidad con el API Contract, cuando corresponda.
 
 Una especificación puede considerarse VERIFIED cuando exista evidencia
 suficiente de que la implementación cumple el comportamiento especificado.

@@ -82,8 +82,6 @@ REQ
  ↓
 SPEC
  ↓
-UC
- ↓
 DOMAIN
  ↓
 CODE
@@ -94,10 +92,22 @@ Donde:
 
 REQ    = Requisito
 SPEC   = Especificación
-UC     = Caso de uso
 DOMAIN = Modelo de dominio
 CODE   = Implementación
 TEST   = Prueba
+
+Desde SPEC pueden existir, además, relaciones opcionales que no son
+eslabones adicionales de la cadena secuencial, sino contenido que vive
+dentro de la propia especificación:
+
+SPEC
+  ├── UC (Caso de uso)
+  └── API Contract
+
+UC aplica cuando la especificación involucra una interacción orientada a
+un objetivo. API Contract aplica cuando la capacidad definida por la
+especificación se expone mediante una API. Ninguna de las dos relaciones
+es obligatoria.
 
 No todos los elementos deben existir para todas las funcionalidades.
 
@@ -145,6 +155,10 @@ ADR-001
 
 TEST-AUTH-001
 
+El API Contract no posee un identificador independiente: al vivir dentro
+de la especificación, se referencia a través del identificador de la
+propia SPEC (por ejemplo, "el API Contract de SPEC-COM-003").
+
 Los identificadores concretos y sus convenciones serán definidos en:
 
 .claude/documentation/conventions.md
@@ -168,7 +182,7 @@ Un requisito puede estar satisfecho por múltiples especificaciones.
 
 La relación no debe asumirse como uno a uno.
 
-7. Especificaciones → Casos de uso
+7. Especificaciones → UC y API Contract
 
 Cuando corresponda, una especificación debe relacionarse con uno o más
 casos de uso.
@@ -185,6 +199,27 @@ Publicar comunicado
 
 El caso de uso debe representar la interacción necesaria para obtener el
 comportamiento definido por la especificación.
+
+Cuando la capacidad definida por la especificación se expone mediante una
+API, la especificación puede además relacionarse con un API Contract.
+
+Ejemplo:
+
+SPEC-COM-003
+Publicar comunicado
+
+        ↓
+
+API Contract
+Frontera externa de "Publicar comunicado" para sus consumidores
+
+No toda especificación tiene un API Contract: aplica únicamente cuando la
+capacidad se expone mediante API. Todo API Contract, en cambio, pertenece
+siempre a una única especificación. El API Contract no es un eslabón
+adicional de la cadena secuencial (ver sección 3): es contenido que vive
+dentro de la propia especificación, igual que el caso de uso, y describe
+exclusivamente la frontera externa de la capacidad — no su implementación
+interna.
 
 8. Casos de uso → Dominio
 
@@ -581,6 +616,14 @@ Integridad de datos.
 Cambios arquitectónicos.
 Contratos externos.
 Funcionalidades críticas.
+
+GAP: el alcance exacto de "Contratos externos" no está definido con
+precisión en este documento. Puede incluir, entre otros casos, el API
+Contract de una especificación cuando existan consumidores externos, pero
+también podría referirse a contratos con proveedores o sistemas de
+terceros ajenos al concepto de API Contract. Esta ambigüedad se registra
+como GAP pendiente de aclaración por el responsable del proyecto; no se
+asume ninguna de las dos interpretaciones.
 28. Trazabilidad opcional
 
 Puede utilizarse un nivel reducido para:

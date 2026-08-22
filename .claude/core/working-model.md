@@ -224,6 +224,7 @@ Alcance.
 Actores.
 Requisitos.
 Casos de uso.
+API Contract, cuando corresponda.
 Reglas de negocio.
 Entidades.
 Estados.

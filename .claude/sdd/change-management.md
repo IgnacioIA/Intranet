@@ -356,6 +356,9 @@ los datos existentes.
 
 14. Análisis de API y contratos
 
+El "contrato" al que se refiere esta sección corresponde al API Contract
+definido dentro de la SPEC de la capacidad afectada.
+
 Si el cambio modifica un contrato, deben identificarse:
 
 Endpoints.

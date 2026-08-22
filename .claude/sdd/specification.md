@@ -635,7 +635,297 @@ Criterios verificables
 Los detalles concretos de implementación deben mantenerse separados cuando
 sea posible.
 
-34. Granularidad
+34. API Contract
+
+Un API Contract define el contrato externo mediante el cual un consumidor
+puede interactuar con una funcionalidad expuesta por la API.
+
+Su objetivo es permitir que un consumidor conozca, sin necesidad de conocer
+la implementación interna del backend:
+
+Qué endpoint debe utilizar.
+Qué método HTTP debe utilizar.
+Qué autenticación requiere.
+Qué parámetros admite.
+Qué headers relevantes admite o requiere.
+Qué estructura de datos puede enviar.
+Qué validaciones afectan la solicitud.
+Qué respuestas puede recibir.
+Qué códigos HTTP representan cada resultado.
+Qué estructura tienen las respuestas.
+Qué estructura tienen los errores.
+Qué condiciones producen cada respuesta relevante.
+
+El API Contract describe el contrato de comunicación, no la implementación
+interna del endpoint.
+
+34.1 Cuándo debe existir
+
+Un API Contract debe definirse cuando una especificación:
+
+Expone una nueva funcionalidad mediante una API.
+Modifica el comportamiento observable de un endpoint existente.
+Agrega, elimina o modifica datos de entrada.
+Agrega, elimina o modifica datos de salida.
+Modifica códigos de respuesta relevantes.
+Modifica errores observables por el consumidor.
+Modifica requisitos de autenticación o autorización.
+Introduce un endpoint utilizado por otro sistema o componente.
+
+No todas las especificaciones necesitan un API Contract.
+
+Por ejemplo, una regla interna del dominio que no sea expuesta directamente
+mediante una API no requiere necesariamente uno.
+
+34.2 Relación con la especificación
+
+La relación conceptual es:
+
+REQ
+ ↓
+SPEC
+ ↓
+UC
+ ↓
+API Contract
+ ↓
+CODE
+ ↓
+TEST
+
+Esta representación no significa que el API Contract reemplace al dominio.
+
+El comportamiento sigue siendo definido por la especificación.
+
+El API Contract define cómo ese comportamiento se expone externamente.
+
+Por lo tanto:
+
+SPEC
+¿Qué comportamiento ofrece el sistema?
+
+
+UC
+¿Cómo interactúa un actor con ese comportamiento?
+
+
+API Contract
+¿Cómo consume un sistema externo ese comportamiento mediante la API?
+
+Una especificación puede tener:
+
+Ningún API Contract.
+Un API Contract.
+Múltiples API Contracts.
+
+Esto depende de las interfaces externas necesarias para exponer el
+comportamiento.
+
+34.3 Identificación
+
+Los API Contracts deben poseer un identificador cuando el contrato tenga
+relevancia propia para la trazabilidad o cuando exista más de un contrato
+asociado a una especificación.
+
+Ejemplo:
+
+API-COM-001
+API-COM-002
+API-USR-001
+
+La convención definitiva de nomenclatura será establecida en:
+
+.claude/documentation/conventions.md
+34.4 Endpoint
+
+Cuando corresponda, el contrato debe identificar:
+
+Método HTTP
+Ruta
+
+Ejemplo:
+
+POST /api/comunicados/{id}/publicar
+
+El endpoint debe representar la capacidad definida por la especificación.
+
+No debe diseñarse únicamente en función de la estructura interna de las
+clases o entidades.
+
+34.5 Autenticación y autorización
+
+El contrato debe indicar cuando corresponda:
+
+Si requiere autenticación.
+Qué mecanismo de autenticación se utiliza.
+Qué permisos o roles son necesarios.
+Qué condiciones de autorización afectan la operación.
+
+Los detalles de seguridad que sean de carácter transversal deben mantenerse
+en la documentación correspondiente y no duplicarse innecesariamente en cada
+contrato.
+
+34.6 Parámetros
+
+Cuando existan parámetros, el contrato debe indicar:
+
+Nombre.
+Ubicación.
+Tipo conceptual.
+Obligatorio u opcional.
+Restricciones relevantes.
+Significado.
+
+Las ubicaciones posibles pueden incluir:
+
+Path
+Query
+Header
+Body
+
+No es necesario documentar detalles internos de implementación que no sean
+relevantes para el consumidor.
+
+34.7 Request
+
+Cuando el endpoint reciba información, el contrato debe definir:
+
+Qué datos admite.
+Qué datos son obligatorios.
+Qué datos son opcionales.
+Restricciones relevantes.
+Reglas de validación observables.
+Formato esperado cuando sea relevante.
+
+Cuando sea útil para comprender el contrato, puede incluirse un ejemplo.
+
+Ejemplo:
+
+{
+  "titulo": "Nuevo comunicado",
+  "contenido": "Contenido del comunicado"
+}
+
+El ejemplo debe considerarse ilustrativo del contrato y no una descripción de
+la implementación interna.
+
+34.8 Response
+
+El contrato debe definir las respuestas relevantes que puede observar el
+consumidor.
+
+Debe indicarse, cuando corresponda:
+
+Código HTTP.
+Condición que produce la respuesta.
+Estructura de los datos.
+Significado de los campos.
+Restricciones relevantes.
+
+Ejemplo:
+
+201 Created
+{
+  "id": 123,
+  "estado": "BORRADOR"
+}
+
+Los ejemplos JSON deben utilizarse cuando aporten claridad al contrato.
+
+No es obligatorio incluir ejemplos para cada caso si la estructura ya es
+suficientemente clara.
+
+34.9 Errores de API
+
+Cuando una especificación sea expuesta mediante una API, los errores
+observables por el consumidor deben formar parte del API Contract.
+
+El contrato debe indicar, cuando corresponda:
+
+Código HTTP.
+Condición que produce el error.
+Estructura de la respuesta.
+Significado de los campos.
+Información que el consumidor puede utilizar para actuar.
+
+Ejemplo conceptual:
+
+404 Not Found
+{
+  "type": "...",
+  "title": "Recurso no encontrado",
+  "status": 404,
+  "detail": "El comunicado solicitado no existe."
+}
+
+El contrato debe describir el formato acordado por el proyecto.
+
+No debe introducir formatos diferentes para cada endpoint sin una razón
+documentada.
+
+Los detalles técnicos internos utilizados para producir el error no forman
+parte del contrato salvo que sean observables por el consumidor.
+
+34.10 Códigos HTTP
+
+Los códigos HTTP utilizados deben representar correctamente el resultado de
+la operación.
+
+El contrato debe evitar utilizar códigos únicamente por conveniencia de
+implementación.
+
+Cuando existan múltiples resultados relevantes, deben documentarse.
+
+Ejemplo:
+
+200 OK
+404 Not Found
+409 Conflict
+422 Unprocessable Entity
+
+La lista concreta dependerá del comportamiento de la funcionalidad y de las
+convenciones API adoptadas por el proyecto.
+
+34.11 Compatibilidad
+
+Un cambio en un API Contract debe analizarse cuando pueda afectar a
+consumidores existentes.
+
+Ejemplos de cambios potencialmente incompatibles:
+
+Eliminar un campo utilizado por el consumidor.
+Cambiar el tipo de un campo.
+Cambiar la obligatoriedad de un campo.
+Eliminar un endpoint.
+Cambiar el significado de una respuesta.
+Modificar un código HTTP utilizado por los consumidores.
+Modificar los requisitos de autenticación.
+Modificar el formato de errores de manera incompatible.
+
+Estos cambios deben seguir el proceso definido en:
+
+.claude/sdd/change-management.md
+34.12 API Contract y frontend
+
+Cuando el consumidor de una API sea el frontend, el API Contract constituye
+el acuerdo entre frontend y backend respecto de la comunicación.
+
+El frontend debe poder desarrollar su consumo a partir del contrato sin
+necesitar conocer:
+
+Las clases del backend.
+Los servicios internos.
+Los repositorios.
+Las entidades JPA.
+La estructura interna de la aplicación.
+
+El contrato debe ser suficiente para conocer qué enviar y qué recibir.
+
+Esto no significa que el frontend sea responsable de las reglas de negocio.
+
+Las reglas de negocio continúan perteneciendo al backend.
+
+35. Granularidad
 
 La especificación debe ser suficientemente pequeña para poder:
 
@@ -651,7 +941,13 @@ No debe existir una especificación por cada método o clase.
 Tampoco debe existir una única especificación gigantesca para todo un
 módulo.
 
-35. Composición de especificaciones
+Los API Contracts tampoco deben utilizarse como unidades artificiales para
+fragmentar una única capacidad de negocio.
+
+La granularidad debe surgir del comportamiento y de las interfaces que
+realmente necesiten ser definidas.
+
+36. Composición de especificaciones
 
 Una funcionalidad compleja puede depender de varias especificaciones.
 
@@ -659,14 +955,18 @@ Ejemplo:
 
 Módulo Comunicados
 
+
 SPEC-COM-001
 Crear comunicado
+
 
 SPEC-COM-002
 Editar comunicado
 
+
 SPEC-COM-003
 Publicar comunicado
+
 
 SPEC-COM-004
 Archivar comunicado
@@ -677,10 +977,11 @@ Entidades.
 Reglas.
 Requisitos.
 Decisiones.
+API Contracts.
 
 Estas relaciones deben documentarse cuando sean relevantes.
 
-36. Estado de una especificación
+37. Estado de una especificación
 
 Toda especificación debe poseer un estado definido por:
 
@@ -699,7 +1000,7 @@ El estado debe representar realmente la situación del artefacto.
 No debe modificarse únicamente para hacer coincidir la documentación con el
 estado del código.
 
-37. Implementación y especificación
+38. Implementación y especificación
 
 Una implementación debe poder responder:
 
@@ -712,7 +1013,10 @@ Una especificación debe poder responder:
 Cuando sea necesario, esta relación debe mantenerse mediante la
 trazabilidad.
 
-38. Pruebas y especificación
+Cuando exista un API Contract, la implementación de la API debe poder
+relacionarse con dicho contrato.
+
+39. Pruebas y especificación
 
 Las pruebas deben derivarse del comportamiento especificado.
 
@@ -724,11 +1028,26 @@ Caso de prueba
         ↓
 Resultado
 
+Cuando exista un API Contract, también deben poder verificarse sus aspectos
+observables mediante pruebas apropiadas.
+
+Por ejemplo:
+
+API Contract
+    ↓
+Request
+    ↓
+Endpoint
+    ↓
+Response
+    ↓
+Caso de prueba
+
 Una prueba no debe considerarse suficiente únicamente porque exista.
 
 Debe verificar un comportamiento definido.
 
-39. Cambios de especificación
+40. Cambios de especificación
 
 Una especificación aprobada no debe modificarse arbitrariamente.
 
@@ -745,33 +1064,52 @@ Dependencias.
 Implementación afectada.
 Pruebas afectadas.
 Trazabilidad afectada.
-40. Calidad de una especificación
+API Contracts afectados, cuando corresponda.
+Compatibilidad con consumidores existentes, cuando corresponda.
+
+Un cambio en un API Contract que no modifique el comportamiento de negocio
+puede requerir igualmente análisis de cambio si modifica el contrato externo
+observable.
+
+41. Calidad de una especificación
 
 Antes de considerar una especificación preparada para implementación,
 Claude debe comprobar:
 
-[ ] El objetivo está definido.
-[ ] El alcance está definido.
-[ ] Los actores están identificados.
-[ ] Los requisitos relacionados están identificados.
-[ ] Las reglas de negocio están identificadas.
-[ ] Los casos de uso están definidos cuando corresponda.
-[ ] Los estados están definidos cuando corresponda.
-[ ] Las transiciones están definidas cuando corresponda.
-[ ] Las invariantes están identificadas cuando corresponda.
-[ ] Los errores relevantes están definidos.
-[ ] Los casos límite relevantes fueron considerados.
-[ ] Los criterios de aceptación son verificables.
-[ ] Las dependencias están identificadas.
-[ ] Las restricciones están identificadas.
-[ ] Los GAPs relevantes fueron resueltos.
-[ ] Las decisiones necesarias están aprobadas.
-[ ] Los requisitos de seguridad fueron considerados.
-[ ] La especificación es trazable.
+ El objetivo está definido.
+ El alcance está definido.
+ Los actores están identificados.
+ Los requisitos relacionados están identificados.
+ Las reglas de negocio están identificadas.
+ Los casos de uso están definidos cuando corresponda.
+ Los estados están definidos cuando corresponda.
+ Las transiciones están definidas cuando corresponda.
+ Las invariantes están identificadas cuando corresponda.
+ Los errores relevantes están definidos.
+ Los casos límite relevantes fueron considerados.
+ Los criterios de aceptación son verificables.
+ Las dependencias están identificadas.
+ Las restricciones están identificadas.
+ Los GAPs relevantes fueron resueltos.
+ Las decisiones necesarias están aprobadas.
+ Los requisitos de seguridad fueron considerados.
+ La especificación es trazable.
+ Se determinó si la funcionalidad requiere un API Contract.
+ Si requiere API Contract, el contrato está definido.
+ Si existe API Contract, sus requests relevantes están definidos.
+ Si existe API Contract, sus responses relevantes están definidos.
+ Si existe API Contract, sus errores observables están definidos.
+ Si existe API Contract, los requisitos de autenticación y autorización
+relevantes están definidos.
+ Si existe API Contract, los cambios de compatibilidad fueron
+considerados cuando corresponda.
 
 No todos los elementos serán obligatorios en todas las especificaciones.
 
-41. Regla contra la sobreespecificación
+La ausencia de un API Contract debe ser una decisión derivada del análisis
+de la funcionalidad y no una omisión accidental.
+
+42. Regla contra la sobreespecificación
 
 Claude debe evitar agregar detalles únicamente para hacer que la
 especificación parezca más completa.
@@ -788,7 +1126,12 @@ Verificar.
 
 La documentación innecesaria aumenta el coste de mantenimiento.
 
-42. Regla contra la subespecificación
+Esto también aplica a los API Contracts.
+
+No debe documentarse cada detalle interno del endpoint si no es observable o
+relevante para el consumidor.
+
+43. Regla contra la subespecificación
 
 Claude tampoco debe considerar suficiente una especificación que deje
 implícitas decisiones relevantes.
@@ -810,11 +1153,42 @@ Restablecer credenciales.
 Cuando la información no esté definida, debe identificarse como GAP o
 decisión pendiente.
 
-43. Evolución de la especificación
+La misma regla aplica a una API.
+
+Ejemplo insuficiente:
+
+Existe un endpoint para gestionar usuarios.
+
+Debe determinarse, cuando corresponda:
+
+Qué operación expone.
+Qué consumidor puede utilizarla.
+Qué información recibe.
+Qué información devuelve.
+Qué errores puede producir.
+Qué autenticación y autorización requiere.
+44. Evolución de la especificación
 
 La especificación debe evolucionar junto con el sistema.
 
 El objetivo es mantener:
+
+Necesidad
+   ↕
+Requisito
+   ↕
+Especificación
+   ↕
+API Contract
+   ↕
+Implementación
+   ↕
+Pruebas
+
+Cuando la funcionalidad no posee una API, el API Contract no forma parte de
+la cadena.
+
+En ese caso:
 
 Necesidad
    ↕
@@ -828,7 +1202,7 @@ Pruebas
 
 Si una de estas relaciones se rompe, debe detectarse y corregirse.
 
-44. Principio general
+45. Principio general
 
 Una buena especificación debe permitir que una persona que no participó en
 la implementación pueda comprender:
@@ -840,6 +1214,11 @@ Qué situaciones contempla.
 Qué situaciones rechaza.
 Cómo se verifica.
 Por qué ciertas decisiones existen.
+Cómo puede ser consumida externamente cuando corresponda.
+
+Cuando exista una API Contract, un consumidor debería poder comprender cómo
+interactuar con la funcionalidad sin conocer la implementación interna del
+backend.
 
 La especificación debe preservar conocimiento del sistema que de otro modo
 quedaría únicamente en el código o en la memoria de los desarrolladores.
