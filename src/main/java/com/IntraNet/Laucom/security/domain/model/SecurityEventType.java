@@ -1,0 +1,49 @@
+package com.IntraNet.Laucom.security.domain.model;
+
+/**
+ * Catálogo de eventos de Security Audit. Ver docs/03-architecture/security.md §5.
+ * No agregar eventos que no estén respaldados por ese catálogo (principio de proporcionalidad,
+ * .claude/core/principles.md).
+ */
+public enum SecurityEventType {
+    LOGIN_ATTEMPT,
+    LOGIN_SUCCESS,
+    LOGIN_FAILURE,
+    LOGOUT,
+    LOGOUT_ALL,
+    ADMIN_SESSION_REVOCATION,
+    AUTHORIZATION_GRANTED,
+    AUTHORIZATION_DENIED,
+    TOKEN_CREATED,
+    TOKEN_REFRESHED,
+    TOKEN_REUSE_DETECTED,
+    TOKEN_REVOKED,
+    ACCOUNT_LOCKED,
+    ACCOUNT_DISABLED,
+    PASSWORD_CHANGED,
+    PASSWORD_RECOVERY_REQUESTED,
+    PASSWORD_RECOVERY_CONFIRMED,
+    AD_LOOKUP_FAILURE,
+    AD_CONNECTION_FAILURE,
+    AD_GROUP_UNMAPPED,
+    AD_USER_PROVISIONED,
+    AD_MAPPING_CHANGED,
+    RATE_LIMIT_EXCEEDED,
+    MASTER_ADMIN_BOOTSTRAPPED,
+    USER_CREATED,
+    USER_UPDATED,
+    USER_ENABLED,
+    USER_DISABLED,
+    USER_LOCKED,
+    USER_UNLOCKED,
+    USER_DEPROVISIONED,
+    ROLE_CREATED,
+    ROLE_UPDATED,
+    ROLE_DISABLED,
+    PERMISSION_CREATED,
+    PERMISSION_UPDATED,
+    PERMISSION_DISABLED,
+    ROLE_ASSIGNED,
+    ROLE_REVOKED,
+    ADMIN_OPERATION_DENIED
+}
