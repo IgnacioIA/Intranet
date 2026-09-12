@@ -1,7 +1,7 @@
 # SPEC-AUTH-008 — Administración del mapping AD Group → Application Role
 
 **Estado:** APPROVED
-**Versión:** 1.1
+**Versión:** 1.2
 
 ## 1. Objetivo
 Permitir que un administrador autorizado mantenga, de forma auditada, la única fuente que traduce pertenencia a un grupo de Active Directory en un rol de la aplicación.
@@ -23,6 +23,7 @@ REQ-AUTH-004, REQ-AUTH-016
 - RN-02: `adGroupIdentifier` es único (INV-AUTH-010); no puede crearse un segundo mapping para el mismo grupo sin antes eliminar o modificar el existente.
 - RN-03: Toda operación de alta/baja/modificación se audita con el administrador autor y la marca de tiempo (`AD_MAPPING_CHANGED`).
 - RN-04: Eliminar un mapping no revoca retroactivamente los roles ya derivados de él; el efecto se aplica en la siguiente sincronización de cada usuario afectado (`SPEC-AUTH-001`, UC-AUTH-004), de forma consistente con que los roles derivados se recalculan en cada login, no en tiempo real fuera de ese proceso.
+- RN-05 (implementación, cierre de gap 2026-09-07): el `roleId` de un mapping (alta o modificación) debe referenciar un `Role` existente y **activo**. Un `Role` inexistente rechaza con 404 (`role-not-found`); un `Role` inactivo rechaza con el mismo error contractual ya usado por `SPEC-AUTH-010` (UC-AUTH-021) para el mismo tipo de violación — `RoleInactiveException`, 400 `role-inactive` — en vez de introducir un código de error paralelo para el mismo concepto de negocio ("no se puede referenciar un Role inactivo").
 
 ## 6. Casos de uso
 
@@ -102,16 +103,20 @@ Permiso `AD_MAPPING_MANAGE`.
 | Código | Significado | Condición |
 |---|---|---|
 | 200/201 | OK/Created | Operación exitosa. |
+| 204 | No Content | Baja exitosa (DELETE). |
+| 400 | Bad Request | `roleId` referencia un Role inactivo (RN-05). |
 | 403 | Forbidden | Sin permiso `AD_MAPPING_MANAGE`. |
-| 404 | Not Found | Mapping inexistente (PUT/DELETE). |
-| 409 | Conflict | Grupo ya mapeado (POST). |
+| 404 | Not Found | Mapping inexistente (PUT/DELETE) o Role inexistente (POST/PUT, RN-05). |
+| 409 | Conflict | Grupo ya mapeado (POST/PUT). |
 
 ### Errores (RFC 7807)
 | Código | Error (`type`) | Condición |
 |---|---|---|
+| 400 | `role-inactive` | RN-05 — mismo error contractual que `SPEC-AUTH-010` UC-AUTH-021. |
 | 403 | `insufficient-permissions` | — |
 | 404 | `mapping-not-found` | — |
-| 409 | `group-already-mapped` | — |
+| 404 | `role-not-found` | RN-05. |
+| 409 | `group-already-mapped` | También aplica al PUT si el nuevo `adGroupIdentifier` ya pertenece a otro mapping. |
 
 ### Restricciones del contrato
 Consumido por un panel de administración; no forma parte del flujo de usuario final.

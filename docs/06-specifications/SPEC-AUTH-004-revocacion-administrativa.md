@@ -1,7 +1,7 @@
 # SPEC-AUTH-004 — Revocación administrativa de sesiones
 
 **Estado:** APPROVED
-**Versión:** 1.1
+**Versión:** 1.2
 
 ## 1. Objetivo
 Permitir que un administrador autorizado revoque todas las sesiones activas de un usuario determinado, para responder a incidentes de seguridad sin intervención directa en base de datos.
@@ -94,6 +94,8 @@ Sin cuerpo.
 ```json
 { "status": "ok", "revokedSessions": 3 }
 ```
+
+`revokedSessions` es la cantidad de **familias** de Refresh Token activas revocadas por esta llamada (no la cantidad de filas/tokens individuales — una familia puede tener muchas filas por rotación, pero como máximo una está activa a la vez, INV-AUTH-006). La operación es idempotente: una segunda ejecución sobre el mismo usuario, sin sesiones nuevas de por medio, devuelve `revokedSessions = 0` y sigue siendo `200 OK` (no un error), porque ya no queda ninguna familia activa que revocar.
 
 ### Códigos HTTP
 | Código | Significado | Condición |

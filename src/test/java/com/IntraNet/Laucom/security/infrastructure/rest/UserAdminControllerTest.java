@@ -8,6 +8,7 @@ import com.IntraNet.Laucom.security.application.admin.GetUserDetailUseCase;
 import com.IntraNet.Laucom.security.application.admin.ListUserRoleAssignmentsUseCase;
 import com.IntraNet.Laucom.security.application.admin.ListUsersUseCase;
 import com.IntraNet.Laucom.security.application.admin.RevokeRoleUseCase;
+import com.IntraNet.Laucom.security.application.admin.RevokeUserSessionsUseCase;
 import com.IntraNet.Laucom.security.application.admin.UpdateLocalUserIdentityUseCase;
 import com.IntraNet.Laucom.security.application.exception.InsufficientPermissionException;
 import com.IntraNet.Laucom.security.application.exception.MasterAdminContinuityViolationException;
@@ -66,13 +67,16 @@ class UserAdminControllerTest {
     private AssignRoleUseCase assignRole;
     @Mock
     private RevokeRoleUseCase revokeRole;
+    @Mock
+    private RevokeUserSessionsUseCase revokeUserSessions;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         UserAdminController controller = new UserAdminController(listUsers, getUserDetail, createLocalUser,
-                updateLocalUserIdentity, changeUserStatus, listUserRoleAssignments, assignRole, revokeRole);
+                updateLocalUserIdentity, changeUserStatus, listUserRoleAssignments, assignRole, revokeRole,
+                revokeUserSessions);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new AuthenticationExceptionHandler())
                 .build();
@@ -149,5 +153,24 @@ class UserAdminControllerTest {
         mockMvc.perform(post("/auth/admin/users/" + UUID.randomUUID() + "/disable"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.type").value(containsString("master-admin-continuity-violation")));
+    }
+
+    @Test
+    void revokeSessions_returnsTheRevokedCount() throws Exception {
+        when(revokeUserSessions.handle(any(), any(), any())).thenReturn(3);
+
+        mockMvc.perform(post("/auth/admin/users/" + UUID.randomUUID() + "/revoke-sessions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ok"))
+                .andExpect(jsonPath("$.revokedSessions").value(3));
+    }
+
+    @Test
+    void revokeSessions_unknownUser_returns404() throws Exception {
+        when(revokeUserSessions.handle(any(), any(), any())).thenThrow(new UserNotFoundException());
+
+        mockMvc.perform(post("/auth/admin/users/" + UUID.randomUUID() + "/revoke-sessions"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.type").value(containsString("user-not-found")));
     }
 }

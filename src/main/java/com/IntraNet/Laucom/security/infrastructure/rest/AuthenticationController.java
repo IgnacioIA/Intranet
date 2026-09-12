@@ -17,6 +17,9 @@ import com.IntraNet.Laucom.security.infrastructure.rest.dto.LoginRequest;
 import com.IntraNet.Laucom.security.infrastructure.rest.dto.LoginResponse;
 import com.IntraNet.Laucom.security.infrastructure.rest.dto.StatusResponse;
 import com.IntraNet.Laucom.security.infrastructure.web.CorrelationIdFilter;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -53,6 +56,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "SPEC-AUTH-001/002/003. Ninguno de estos 4 endpoints requiere Access Token.")
 public class AuthenticationController {
 
     private static final String REFRESH_COOKIE_NAME = "refreshToken";
@@ -88,6 +92,15 @@ public class AuthenticationController {
         this.accessTokenTtlSeconds = accessTokenTtlSeconds;
     }
 
+    @Operation(summary = "Login LOCAL o Active Directory", security = {},
+            description = "SPEC-AUTH-001 §12. `provider` es obligatorio (`LOCAL` o `ACTIVE_DIRECTORY`, RN-08). "
+                    + "Devuelve el Access Token en el cuerpo y fija el Refresh Token en una cookie HttpOnly "
+                    + "(ADR-010). Credenciales inválidas, usuario inexistente y cuenta LOCKED/DISABLED "
+                    + "responden todas 401 `invalid-credentials` (RN-06: mensaje genérico único).")
+    @ApiResponse(responseCode = "200", description = "Login exitoso.")
+    @ApiResponse(responseCode = "400", description = "`provider` inválido (`invalid-provider`).")
+    @ApiResponse(responseCode = "401", description = "Credenciales inválidas o cuenta no autenticable (`invalid-credentials`).")
+    @ApiResponse(responseCode = "429", description = "Límite de intentos excedido (`rate-limit-exceeded`).")
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
                                                 HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
@@ -114,6 +127,13 @@ public class AuthenticationController {
         return ResponseEntity.ok(LoginResponse.of(session.accessToken(), accessTokenTtlSeconds));
     }
 
+    @Operation(summary = "Renovar sesión", security = {},
+            description = "SPEC-AUTH-002 §12. Requiere el Refresh Token vía cookie HttpOnly (no en el "
+                    + "cuerpo). Rotación estricta: el token presentado queda revocado y se emite uno nuevo "
+                    + "(INV-AUTH-006). Reutilizar un Refresh Token ya rotado revoca toda su familia "
+                    + "(`refresh-token-reused`, INV-AUTH-007).")
+    @ApiResponse(responseCode = "200", description = "Nuevo Access Token + cookie de Refresh Token rotada.")
+    @ApiResponse(responseCode = "401", description = "Refresh Token ausente/inválido/expirado (`invalid-refresh-token`) o reutilizado (`refresh-token-reused`).")
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponse> refresh(
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshTokenCookie,
@@ -129,6 +149,11 @@ public class AuthenticationController {
         return ResponseEntity.ok(LoginResponse.of(session.accessToken(), accessTokenTtlSeconds));
     }
 
+    @Operation(summary = "Cerrar sesión actual", security = {},
+            description = "SPEC-AUTH-003 §12. Revoca únicamente la familia de Refresh Token del cookie "
+                    + "presentado (RN-01). Idempotente: sin cookie, o con un token ya revocado/inexistente, "
+                    + "sigue respondiendo 200.")
+    @ApiResponse(responseCode = "200", description = "Sesión cerrada (o ya no había nada que cerrar).")
     @PostMapping("/logout")
     public ResponseEntity<StatusResponse> logout(
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshTokenCookie,
@@ -138,6 +163,11 @@ public class AuthenticationController {
         return ResponseEntity.ok(StatusResponse.ok());
     }
 
+    @Operation(summary = "Cerrar todas las sesiones del usuario", security = {},
+            description = "SPEC-AUTH-003 §12. Revoca TODAS las familias de Refresh Token del usuario "
+                    + "identificado por el cookie presentado (RN-02), no solo la actual. Idempotente, "
+                    + "igual criterio que /auth/logout.")
+    @ApiResponse(responseCode = "200", description = "Todas las sesiones del usuario quedaron cerradas.")
     @PostMapping("/logout/all")
     public ResponseEntity<StatusResponse> logoutAll(
             @CookieValue(name = REFRESH_COOKIE_NAME, required = false) String refreshTokenCookie,

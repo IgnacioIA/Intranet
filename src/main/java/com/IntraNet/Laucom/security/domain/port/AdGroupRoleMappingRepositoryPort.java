@@ -2,19 +2,39 @@ package com.IntraNet.Laucom.security.domain.port;
 
 import com.IntraNet.Laucom.security.domain.model.AdGroupRoleMapping;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Persistencia de {@link AdGroupRoleMapping}. Ver SPEC-AUTH-001 (UC-AUTH-003/004), SPEC-AUTH-008.
  *
- * <p>Solo expone, por ahora, el método que UC-AUTH-003/UC-AUTH-004 (Fase 5) requieren
- * genuinamente: resolver qué grupos AD de un usuario tienen mapping vigente. Los métodos de
- * alta/baja/modificación (UC-AUTH-013, SPEC-AUTH-008) se agregan cuando esa administración se
- * implemente — requiere autorización (`AD_MAPPING_MANAGE`), que todavía no existe (Fase 6) — no
- * se anticipan aquí de forma especulativa (mismo criterio que {@code UserRepositoryPort}).</p>
+ * <p>{@code findByAdGroupIdentifierIn} sirve la sincronización de login AD (Fase 5). Los métodos
+ * de administración (UC-AUTH-013, SPEC-AUTH-008) se agregaron cuando esa administración se
+ * implementó — ya no son especulativos.</p>
  */
 public interface AdGroupRoleMappingRepositoryPort {
 
     /** INV-AUTH-010: como máximo un mapping por identificador de grupo. */
     Set<AdGroupRoleMapping> findByAdGroupIdentifierIn(Set<String> adGroupIdentifiers);
+
+    Optional<AdGroupRoleMapping> findById(UUID id);
+
+    /** UC-AUTH-013 SPEC-AUTH-008 RN-02: verificación de unicidad en alta/modificación. */
+    Optional<AdGroupRoleMapping> findByAdGroupIdentifier(String adGroupIdentifier);
+
+    /** UC-AUTH-013 SPEC-AUTH-008: `GET /auth/admin/ad-group-mappings`. Catálogo acotado, sin paginación. */
+    List<AdGroupRoleMapping> findAll();
+
+    /**
+     * @throws com.IntraNet.Laucom.security.application.exception.AdGroupMappingAlreadyExistsException
+     * si la violación de la constraint {@code UNIQUE(ad_group_identifier)} (INV-AUTH-010) llega
+     * a nivel de base de datos pese a la verificación previa de la capa de aplicación (condición
+     * de carrera entre dos altas concurrentes para el mismo grupo).
+     */
+    AdGroupRoleMapping save(AdGroupRoleMapping mapping);
+
+    /** UC-AUTH-013 SPEC-AUTH-008: baja física — INV-AUTH-014 (soft deactivation) no aplica a este tipo. */
+    void deleteById(UUID id);
 }

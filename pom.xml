@@ -58,6 +58,15 @@
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 
+		<!-- Documentación de API generada desde el código (siempre en sincronía: se recalcula en
+		     cada arranque a partir de las anotaciones de los controladores, nunca un archivo
+		     mantenido a mano). Expone /v3/api-docs, /v3/api-docs.yaml y /swagger-ui.html. -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>3.1.1</version>
+		</dependency>
+
 		<dependency>
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
@@ -72,6 +81,10 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-mysql</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
 		</dependency>
 
 		<dependency>
@@ -165,5 +178,68 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<!--
+			Exporta el OpenAPI generado en vivo (fuente de verdad: springdoc, a partir del código)
+			a un archivo estático versionable en docs/07-api-contract/openapi.json, para equipos
+			que consumen el contrato sin correr la aplicación (Postman, generación de clientes).
+
+			Requiere una aplicación arrancable de verdad: MySQL accesible (DB_URL/DB_USERNAME/
+			DB_PASSWORD), claves JWT válidas (JWT_PRIVATE_KEY_BASE64/JWT_PUBLIC_KEY_BASE64) y, si
+			no existe ya un administrador, un MASTER_ADMIN_BOOTSTRAP_PASSWORD_HASH válido (RN-07
+			SPEC-AUTH-009, fail-fast) — no se ejecuta como parte del build normal (mvn test/package/
+			verify sin -P no la activan) precisamente porque no todo entorno tiene esos requisitos
+			disponibles (ej. este mismo sandbox de desarrollo, sin Docker/MySQL).
+
+			Uso: mvn verify -Pgenerate-openapi (con las variables de entorno de arriba exportadas).
+		-->
+		<profile>
+			<id>generate-openapi</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>pre-integration-test</id>
+								<phase>pre-integration-test</phase>
+								<goals>
+									<goal>start</goal>
+								</goals>
+							</execution>
+							<execution>
+								<id>post-integration-test</id>
+								<phase>post-integration-test</phase>
+								<goals>
+									<goal>stop</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.springdoc</groupId>
+						<artifactId>springdoc-openapi-maven-plugin</artifactId>
+						<version>1.5</version>
+						<executions>
+							<execution>
+								<id>integration-test</id>
+								<phase>integration-test</phase>
+								<goals>
+									<goal>generate</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<apiDocsUrl>http://localhost:8080/v3/api-docs</apiDocsUrl>
+							<outputFileName>openapi.json</outputFileName>
+							<outputDir>${project.basedir}/docs/07-api-contract</outputDir>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>

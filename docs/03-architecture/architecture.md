@@ -83,3 +83,31 @@ Ver `ADR-015`.
 - El dominio nunca es la fuente de autorización cacheada: toda decisión de autorización se resuelve contra el estado vigente (ver `docs/03-architecture/security.md` y REQ-AUTH-015).
 - Ningún Port se diseña con más de una implementación especulativa en V1 (evitar sobreingeniería: un solo adapter real + un fake de test por Port).
 - La extracción a artefacto reutilizable (JAR, eventual Starter) se pospone hasta que exista un segundo consumidor real (`ADR-016`).
+
+## 6. Reutilización — Permission Catalog (`ADR-021`)
+
+El módulo Security/Auth es dueño de sus propios permisos (los ya existentes: `USER_READ`, `USER_MANAGE`, `ROLE_READ`, `ROLE_MANAGE`, `PERMISSION_READ`, `PERMISSION_MANAGE`, `ROLE_ASSIGN`, `ROLE_REVOKE`, `SESSION_REVOKE_ANY`, `AD_MAPPING_MANAGE`, `VIEW_ONBOARDING_INFO` — ver `WellKnownPermissions`). Una aplicación consumidora (ej. una futura Intranet) es dueña de su propio namespace de permisos (ej. `INTRANET.DOCUMENT_READ`); el módulo no conoce ni necesita conocer su significado.
+
+```text
+                  ┌──────────────────────┐
+                  │   Security/Auth V1    │
+                  │  USER_*, ROLE_*, ...  │
+                  │  RBAC · AuthN/AuthZ   │
+                  │  AD mapping           │
+                  └──────────┬───────────┘
+                             │
+                     Permission Catalog
+                             │
+             ┌───────────────┴───────────────┐
+             │                               │
+      ┌──────▼───────┐                ┌──────▼───────┐
+      │   Intranet   │                │   Otra app   │
+      │  INTRANET.*  │                │    CRM.*     │
+      └──────────────┘                └──────────────┘
+```
+
+Cada aplicación (el propio módulo incluido) declara un bean `PermissionCatalog` (`application.permissioncatalog`); al arrancar, `SynchronizePermissionCatalogUseCase` crea únicamente los permisos declarados que todavía no existen en DB (`active = true`), sin tocar jamás los ya existentes (ni su `active`, ni su `description` — la decisión administrativa de desactivar un permiso es permanente frente a redeploys). Agregar un permiso de aplicación nuevo requiere solo agregar un descriptor en la aplicación consumidora, nunca tocar el módulo Security/Auth. Detalle completo, alternativas consideradas y reglas exactas en `ADR-021`.
+
+## 7. Documentación de API generada desde el código
+
+El contrato HTTP máquina-legible (OpenAPI 3) no se mantiene a mano: se genera en cada arranque a partir de los `@RestController` reales (springdoc-openapi), y se expone en `/v3/api-docs` y `/swagger-ui.html`. Un archivo estático versionado (`docs/07-api-contract/openapi.json`) se regenera con `mvn verify -Pgenerate-openapi` para quien necesite importarlo sin correr la aplicación. Las Specifications (`docs/06-specifications/`) siguen siendo la fuente de verdad de *por qué* existe cada endpoint y sus reglas de negocio; el OpenAPI generado es la forma exacta de *cómo* invocarlo. Ver `docs/07-api-contract/README.md` para el flujo completo.

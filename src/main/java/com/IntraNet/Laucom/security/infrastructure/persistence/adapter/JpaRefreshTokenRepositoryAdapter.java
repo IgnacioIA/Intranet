@@ -66,7 +66,7 @@ public class JpaRefreshTokenRepositoryAdapter implements RefreshTokenRepositoryP
 
     @Override
     @Transactional
-    public void revokeAllActiveForUser(UUID userId, Instant revokedAt) {
-        jpaRepository.revokeAllActiveForUser(userId.toString(), revokedAt);
+    public int revokeAllActiveForUser(UUID userId, Instant revokedAt) {
+        return jpaRepository.revokeAllActiveForUser(userId.toString(), revokedAt);
     }
 }

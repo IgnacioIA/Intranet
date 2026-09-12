@@ -1,5 +1,7 @@
 package com.IntraNet.Laucom.security.infrastructure.rest;
 
+import com.IntraNet.Laucom.security.application.exception.AdGroupMappingAlreadyExistsException;
+import com.IntraNet.Laucom.security.application.exception.AdGroupMappingNotFoundException;
 import com.IntraNet.Laucom.security.application.exception.AssignmentNotExplicitException;
 import com.IntraNet.Laucom.security.application.exception.DirectoryGroupLookupFailedException;
 import com.IntraNet.Laucom.security.application.exception.DirectoryUnavailableException;
@@ -187,6 +189,17 @@ class AuthenticationExceptionHandler {
     @ExceptionHandler(SystemPermissionProtectedException.class)
     ProblemDetail handleSystemPermissionProtected(SystemPermissionProtectedException e) {
         return problem(HttpStatus.CONFLICT, "system-permission-protected", e.getMessage());
+    }
+
+    @ExceptionHandler(AdGroupMappingNotFoundException.class)
+    ProblemDetail handleAdGroupMappingNotFound() {
+        return problem(HttpStatus.NOT_FOUND, "mapping-not-found", "Mapping AD Group -> Role inexistente");
+    }
+
+    @ExceptionHandler(AdGroupMappingAlreadyExistsException.class)
+    ProblemDetail handleAdGroupMappingAlreadyExists() {
+        return problem(HttpStatus.CONFLICT, "group-already-mapped",
+                "Ya existe un mapping para ese grupo de Active Directory");
     }
 
     @ExceptionHandler(PasswordPolicyViolationException.class)

@@ -10,7 +10,7 @@ import java.util.UUID;
 public final class AdGroupRoleMapping {
 
     private final UUID id;
-    private final String adGroupIdentifier;
+    private String adGroupIdentifier;
     private UUID roleId;
     private final UUID createdBy;
     private UUID updatedBy;
@@ -41,8 +41,18 @@ public final class AdGroupRoleMapping {
         return new AdGroupRoleMapping(id, adGroupIdentifier, roleId, createdBy, updatedBy, createdAt, updatedAt);
     }
 
-    /** RN-01/RN-03 SPEC-AUTH-008: toda modificación se audita con autor y fecha (a cargo de la capa de aplicación). */
-    public void changeRole(UUID newRoleId, UUID updatedBy, Instant now) {
+    /**
+     * UC-AUTH-013 SPEC-AUTH-008, RN-03: toda modificación se audita con autor y fecha (a cargo
+     * de la capa de aplicación — la verificación de unicidad de {@code adGroupIdentifier}, RN-02,
+     * y de que {@code newRoleId} exista y esté activo, RN-05, también son responsabilidad de esa
+     * capa: este método solo aplica el cambio, ya validado).
+     */
+    public void update(String newAdGroupIdentifier, UUID newRoleId, UUID updatedBy, Instant now) {
+        Objects.requireNonNull(newAdGroupIdentifier, "newAdGroupIdentifier");
+        if (newAdGroupIdentifier.isBlank()) {
+            throw new IllegalArgumentException("adGroupIdentifier no puede estar vacío");
+        }
+        this.adGroupIdentifier = newAdGroupIdentifier;
         this.roleId = Objects.requireNonNull(newRoleId, "newRoleId");
         this.updatedBy = updatedBy;
         this.updatedAt = now;

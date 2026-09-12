@@ -183,6 +183,9 @@ No aplica.
 ## 9. Specifications relacionadas
 - `SPEC-AUTH-006`, `SPEC-AUTH-010`
 
+## 10. Reutilización — Permission Catalog (`ADR-021`)
+El dominio `Permission` no distingue de dónde proviene un permiso más allá de `isSystemPermission` (requerido por el propio módulo) vs. no (declarado por una aplicación consumidora vía su propio `PermissionCatalog`, o dado de alta manualmente por un administrador vía `SPEC-AUTH-010`). El mecanismo de sincronización declarativa que crea instancias de `Permission` ausentes en el arranque se documenta en `ADR-021`; no introduce ningún atributo ni invariante nuevo sobre esta entidad.
+
 ## 10. ADR relacionados
 - `ADR-020`
 

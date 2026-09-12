@@ -18,6 +18,8 @@ public final class WellKnownPermissions {
     public static final String ROLE_REVOKE = "ROLE_REVOKE";
     /** SPEC-AUTH-008, sembrado en V5 (Fase 12). */
     public static final String AD_MAPPING_MANAGE = "AD_MAPPING_MANAGE";
+    /** SPEC-AUTH-004, sembrado en V9. */
+    public static final String SESSION_REVOKE_ANY = "SESSION_REVOKE_ANY";
 
     private WellKnownPermissions() {
     }

@@ -60,6 +60,10 @@ public class AdGroupRoleMappingJpaEntity {
         return adGroupIdentifier;
     }
 
+    public void setAdGroupIdentifier(String adGroupIdentifier) {
+        this.adGroupIdentifier = adGroupIdentifier;
+    }
+
     public String getRoleId() {
         return roleId;
     }

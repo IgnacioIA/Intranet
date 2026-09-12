@@ -19,9 +19,13 @@ public interface RefreshTokenJpaRepository extends JpaRepository<RefreshTokenJpa
             + "WHERE t.familyId = :familyId AND t.revokedAt IS NULL")
     void revokeAllActiveInFamily(@Param("familyId") String familyId, @Param("revokedAt") Instant revokedAt);
 
-    /** SessionRevocationPort: revocación masiva de todas las sesiones vigentes de un usuario. */
+    /**
+     * SessionRevocationPort: revocación masiva de todas las sesiones vigentes de un usuario.
+     * El {@code int} devuelto (soportado nativamente por Spring Data JPA en métodos
+     * {@code @Modifying}) es la cantidad de filas afectadas — ver Javadoc del Port.
+     */
     @Modifying
     @Query("UPDATE RefreshTokenJpaEntity t SET t.revokedAt = :revokedAt "
             + "WHERE t.userId = :userId AND t.revokedAt IS NULL")
-    void revokeAllActiveForUser(@Param("userId") String userId, @Param("revokedAt") Instant revokedAt);
+    int revokeAllActiveForUser(@Param("userId") String userId, @Param("revokedAt") Instant revokedAt);
 }

@@ -34,6 +34,14 @@ public interface RefreshTokenRepositoryPort {
     /** UC-AUTH-005 3b, INV-AUTH-007: reutilización detectada. */
     void revokeAllActiveInFamily(UUID familyId, Instant revokedAt);
 
-    /** SessionRevocationPort (RN-05 SPEC-AUTH-007, REQ-AUTH-011 aplicado automáticamente). */
-    void revokeAllActiveForUser(UUID userId, Instant revokedAt);
+    /**
+     * SessionRevocationPort (RN-05 SPEC-AUTH-007, REQ-AUTH-011 aplicado automáticamente);
+     * también usado directamente por {@code RevokeUserSessionsUseCase} (SPEC-AUTH-004), que sí
+     * necesita el resultado.
+     *
+     * @return cantidad de familias activas revocadas (INV-AUTH-006: como máximo una fila activa
+     * por familia, así que el conteo de filas afectadas por este UPDATE masivo es exactamente
+     * la cantidad de familias distintas revocadas — no la cantidad total de filas históricas).
+     */
+    int revokeAllActiveForUser(UUID userId, Instant revokedAt);
 }
