@@ -3,7 +3,6 @@ package com.IntraNet.Laucom.security.infrastructure.persistence.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
@@ -39,8 +38,7 @@ public class SecurityAuditEventJpaEntity {
     @Column(name = "outcome", length = 20, nullable = false)
     private String outcome;
 
-    @Lob
-    @Column(name = "metadata")
+    @Column(name = "metadata", columnDefinition = "TEXT")
     private String metadata;
 
     protected SecurityAuditEventJpaEntity() {
