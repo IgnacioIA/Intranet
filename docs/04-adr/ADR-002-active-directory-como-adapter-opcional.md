@@ -34,9 +34,36 @@ Ninguna significativa.
 - Ninguno relevante identificado.
 
 ## 7. Áreas afectadas
-Application (definición del Port), Infrastructure (adapter AD y adapter Fake de test).
+Application (definición del Port), Infrastructure (`ActiveDirectoryAdapter` y `NoOpIdentityDirectoryAdapter`, ver §9).
 
 ## 8. Documentación relacionada
 - Requisitos: REQ-AUTH-002, REQ-AUTH-021
 - Specifications: SPEC-AUTH-001
 - ADR relacionados: ADR-001
+
+## 9. Nota de implementación (pendiente de aprobación)
+
+**Esta sección documenta un comportamiento ya implementado en el código. No cambia el Estado
+(§1) de este ADR — sigue "Propuesto" — porque aceptarlo formalmente requiere una decisión
+explícita del responsable del proyecto, no de Claude.**
+
+Al escribir este ADR, "un proyecto sin AD simplemente no configura este adapter" (§4) quedó sin
+resolver un detalle: `AuthenticateActiveDirectoryUserUseCase` y `AuthenticationController`
+declaran `IdentityDirectoryPort` como dependencia obligatoria de constructor, así que con
+`ActiveDirectoryAdapter` ausente (`ad.enabled=false`, su default) Spring no podía construir el
+contexto en absoluto — un `UnsatisfiedDependencyException` en el arranque, no un comportamiento
+en runtime.
+
+Se agregó `NoOpIdentityDirectoryAdapter` (`security/infrastructure/directory/`), activo
+exactamente cuando `ActiveDirectoryAdapter` no lo está
+(`@ConditionalOnProperty(name="ad.enabled", havingValue="false", matchIfMissing=true)`, mutuamente
+excluyente con `havingValue="true"` de `ActiveDirectoryAdapter`). Devuelve siempre
+`IdentityDirectoryPort.DirectoryUnavailable` — el mismo resultado de dominio que ya existía para
+"AD inalcanzable en runtime" (UC-AUTH-002 flujo 2b, `AD_CONNECTION_FAILURE`). No se introdujo
+ningún concepto de dominio nuevo: se determinó que, desde la perspectiva del Use Case y del
+cliente HTTP, "AD no configurado" y "AD temporalmente inalcanzable" son indistinguibles y les
+corresponde la misma respuesta (503 `ad-unavailable`), consistente con RN-06 (SPEC-AUTH-001): la
+disponibilidad del servicio no es información de la cuenta.
+
+**Pendiente de decisión del responsable del proyecto:** si este comportamiento se considera
+correcto y suficiente, corresponde pasar el Estado de este ADR a "Aceptado".
