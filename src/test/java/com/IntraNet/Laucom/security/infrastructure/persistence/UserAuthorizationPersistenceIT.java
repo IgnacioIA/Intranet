@@ -125,4 +125,31 @@ class UserAuthorizationPersistenceIT {
 
         assertThat(userRepository.save(adUser)).isNotNull(); // no debe lanzar: unicidad es por (provider, username)
     }
+
+    /**
+     * Reproduce contra MySQL/Hibernate real el escenario que causó
+     * {@code ClassCastException: Long cannot be cast to Boolean} en el bootstrap del Master
+     * Admin: {@code existsActiveUserWithRole} debe devolver {@code true/false} sin lanzar,
+     * incluso cuando la implementación subyacente delega en una query {@code COUNT(*)} nativa
+     * (ver Javadoc de {@code UserRoleAssignmentJpaRepository#countActiveUsersWithRole}).
+     */
+    @Test
+    void existsActiveUserWithRole_returnsTrue_whenAnActiveUserHoldsTheRole() {
+        Role role = Role.create(UUID.randomUUID(), "REPORT_VIEWER", null);
+        roleRepository.save(role);
+        User user = User.createLocal(UUID.randomUUID(), "viewer1", "Viewer One", null,
+                PasswordCredential.of("hash", false), NOW);
+        user.assignRole(UserRoleAssignment.grantedExplicitly(role.id(), NOW), NOW);
+        userRepository.save(user);
+
+        assertThat(userRepository.existsActiveUserWithRole(role.id())).isTrue();
+    }
+
+    @Test
+    void existsActiveUserWithRole_returnsFalse_whenNoActiveUserHoldsTheRole() {
+        Role role = Role.create(UUID.randomUUID(), "UNUSED_ROLE", null);
+        roleRepository.save(role);
+
+        assertThat(userRepository.existsActiveUserWithRole(role.id())).isFalse();
+    }
 }

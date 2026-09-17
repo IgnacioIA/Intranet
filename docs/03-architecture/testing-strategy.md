@@ -52,6 +52,30 @@ Revocación administrativa de sesiones (`SPEC-AUTH-004`, implementado 2026-09-07
 
 Permission Catalog (`ADR-021`, mecanismo transversal, implementado 2026-09-07): permiso declarado ausente en DB → se crea `active = true` · permiso declarado ya existente y activo → permanece sin cambios · permiso declarado ya existente y desactivado por un administrador → permanece desactivado (la sincronización nunca reactiva) · sincronizar el mismo descriptor varias veces → nunca crea un duplicado · descriptor `systemPermission = true` → persiste como tal · descriptor `systemPermission = false` → persiste como tal · múltiples `PermissionCatalog` en el contexto → todos se sincronizan.
 
+## 3.1 Incidente cerrado — `existsActiveUserWithRole` (2026-09-16)
+
+**HECHO — VERIFICADO:** el arranque en un entorno con MySQL 8.4 real (Windows Server) falló con
+`ClassCastException: Long cannot be cast to Boolean` en
+`UserRoleAssignmentJpaRepository.existsActiveUserWithRole()`. Causa raíz: una query nativa
+`SELECT EXISTS (...)` — en MySQL, `EXISTS(...)` usado como expresión de `SELECT` se tipa como
+BIGINT, no como booleano; Hibernate 7.4.1.Final/mysql-connector-j 9.7.0 lo devuelven como `Long`,
+y Spring Data JPA no convierte ese valor al `boolean` declarado por el método.
+
+**DECISIÓN:** eliminar la query nativa `EXISTS` dedicada. `JpaUserRepositoryAdapter.existsActiveUserWithRole`
+ahora delega en `countActiveUsersWithRole` (`> 0`), reutilizando una query `COUNT(*)` cuyo tipo de
+retorno (`long`) ya era compatible con el stack real. Se descartó reescribir el `EXISTS` en
+JPQL (mayor superficie de cambio para una tabla de tamaño despreciable) y descartar `CAST(...)`
+en SQL nativo (no resuelve el tipo BIGINT subyacente). El contrato de `UserRepositoryPort` no
+cambió.
+
+**GAP cerrado:** no existía ningún test — mockeado o de integración — que ejecutara este método
+contra JPA/MySQL real; el único test previo (`BootstrapMasterAdminUseCaseTest`) mockea
+`UserRepositoryPort` por completo. Se agregó cobertura en `UserAuthorizationPersistenceIT`
+(Testcontainers/MySQL, mismo patrón ya usado por esa clase) para los casos "existe un usuario
+ACTIVE con el rol" y "no existe ninguno".
+
+---
+
 ## 4. Principio general
 
 Una prueba que solo verifica "el código compila y no lanza excepción" no se considera evidencia de cumplimiento de una SPEC. Toda prueba de seguridad debe poder relacionarse con un `TEST-AUTH-NNN` trazable a la SPEC y al criterio de aceptación que verifica (ver `05-traceability/traceability.md`).

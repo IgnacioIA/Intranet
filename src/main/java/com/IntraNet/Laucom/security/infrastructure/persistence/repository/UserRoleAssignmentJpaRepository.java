@@ -15,16 +15,19 @@ public interface UserRoleAssignmentJpaRepository extends JpaRepository<UserRoleA
     void deleteByIdUserId(String userId);
 
     /**
-     * INV-AUTH-013, SPEC-AUTH-009 UC-AUTH-014. Nativa: no hay asociación JPA entre esta entidad
-     * y {@code UserJpaEntity} (ver Javadoc de {@code UserRoleAssignmentJpaEntity} — clave
-     * compuesta gestionada explícitamente, sin relación bidireccional).
+     * INV-AUTH-013, SPEC-AUTH-009 UC-AUTH-014, SPEC-AUTH-010 RN-07 (Fase 17). Nativa: no hay
+     * asociación JPA entre esta entidad y {@code UserJpaEntity} (ver Javadoc de
+     * {@code UserRoleAssignmentJpaEntity} — clave compuesta gestionada explícitamente, sin
+     * relación bidireccional).
+     *
+     * <p>Usada tanto para "¿hay al menos uno?" ({@code JpaUserRepositoryAdapter#existsActiveUserWithRole}
+     * hace {@code > 0} sobre este resultado) como para "¿hay exactamente uno o varios?" (protección
+     * del último administrador). No existe una query {@code EXISTS} nativa dedicada: en MySQL,
+     * {@code SELECT EXISTS(...)} usado como expresión de columna se tipa como BIGINT, no como
+     * booleano, y Hibernate/el driver JDBC lo devuelven como {@code Long} — un método de
+     * repositorio declarado {@code boolean} sobre esa query fallaba con
+     * {@code ClassCastException: Long cannot be cast to Boolean} al intentar el unboxing.</p>
      */
-    @Query(value = "SELECT EXISTS (SELECT 1 FROM user_role_assignments a "
-            + "JOIN users u ON u.id = a.user_id WHERE a.role_id = :roleId AND u.status = 'ACTIVE')",
-            nativeQuery = true)
-    boolean existsActiveUserWithRole(@Param("roleId") String roleId);
-
-    /** INV-AUTH-013, SPEC-AUTH-010 RN-07 (Fase 17): distingue "exactamente uno" de "hay varios". */
     @Query(value = "SELECT COUNT(*) FROM user_role_assignments a "
             + "JOIN users u ON u.id = a.user_id WHERE a.role_id = :roleId AND u.status = 'ACTIVE'",
             nativeQuery = true)

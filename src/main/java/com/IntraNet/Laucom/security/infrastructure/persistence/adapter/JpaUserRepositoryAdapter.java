@@ -68,7 +68,13 @@ public class JpaUserRepositoryAdapter implements UserRepositoryPort {
     @Override
     @Transactional(readOnly = true)
     public boolean existsActiveUserWithRole(UUID roleId) {
-        return assignmentJpaRepository.existsActiveUserWithRole(roleId.toString());
+        // Delega en countActiveUsersWithRole (no en un EXISTS nativo propio): en MySQL, un
+        // EXISTS(...) usado como expresión de SELECT se tipa como BIGINT, no como booleano, y
+        // Hibernate 7.4.1/mysql-connector-j 9.7.0 lo devuelven como Long — Spring Data JPA no
+        // lo convierte a Boolean para queries nativas, y el intento de unboxing a `boolean`
+        // producía ClassCastException. countActiveUsersWithRole ya usa el tipo de retorno
+        // correcto (long) para el mismo BIGINT, por lo que reutilizarlo es type-safe.
+        return assignmentJpaRepository.countActiveUsersWithRole(roleId.toString()) > 0;
     }
 
     @Override
