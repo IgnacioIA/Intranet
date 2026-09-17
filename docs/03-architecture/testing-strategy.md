@@ -74,6 +74,26 @@ contra JPA/MySQL real; el único test previo (`BootstrapMasterAdminUseCaseTest`)
 (Testcontainers/MySQL, mismo patrón ya usado por esa clase) para los casos "existe un usuario
 ACTIVE con el rol" y "no existe ninguno".
 
+## 3.2 Incidente cerrado — `saveRotation` y `fk_refresh_tokens_replaced_by` (2026-09-17)
+
+**HECHO — VERIFICADO:** `POST /auth/refresh` fallaba con HTTP 500 en un entorno con MySQL 8.4
+real (Windows Server): `SQLIntegrityConstraintViolationException` sobre
+`fk_refresh_tokens_replaced_by`. Causa raíz: `JpaRefreshTokenRepositoryAdapter.saveRotation`
+hacía `saveAndFlush` del token padre (ya con `replaced_by_token_id` apuntando al `id` del hijo,
+fijado en memoria por `RefreshToken.rotate()`) **antes** de insertar el hijo. MySQL/InnoDB valida
+cada FK en el propio `UPDATE`/`INSERT` (no la difiere al commit, a diferencia de PostgreSQL), por
+lo que el `UPDATE` del padre fallaba al referenciar una fila todavía inexistente.
+
+**DECISIÓN:** invertir el orden dentro de `saveRotation` — `saveAndFlush` del hijo primero, luego
+`saveAndFlush` del padre actualizado. Ambas escrituras permanecen dentro de la misma transacción
+(`@Transactional` sin cambios), preservando la atomicidad de INV-AUTH-006. No se tocó el modelo de
+dominio (`RefreshToken.rotate()`), `RenewSessionUseCase`, la FK ni el esquema.
+
+**GAP cerrado:** no existía ningún test — mockeado o de integración — que ejecutara `saveRotation`
+contra JPA/MySQL real; `RenewSessionUseCaseTest` mockea `RefreshTokenRepositoryPort` por completo.
+Se agregó `RefreshTokenPersistenceIT` (Testcontainers/MySQL, mismo patrón que
+`UserAuthorizationPersistenceIT`) cubriendo una rotación real de punta a punta.
+
 ---
 
 ## 4. Principio general

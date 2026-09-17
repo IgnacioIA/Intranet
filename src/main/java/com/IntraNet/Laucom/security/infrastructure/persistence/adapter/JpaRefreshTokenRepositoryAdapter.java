@@ -45,17 +45,20 @@ public class JpaRefreshTokenRepositoryAdapter implements RefreshTokenRepositoryP
     @Transactional
     public void saveRotation(RefreshToken revokedParent, RefreshToken newChild) {
         // Ambas escrituras ocurren dentro de la misma transacción Spring/JPA: o se confirman
-        // juntas, o ninguna lo hace (INV-AUTH-006). saveAndFlush fuerza el INSERT del hijo
-        // (con su token_hash único) a fallar rápido aquí mismo si algo estuviera mal, en vez de
-        // diferirlo al flush implícito de fin de transacción.
+        // juntas, o ninguna lo hace (INV-AUTH-006). Orden obligatorio por integridad referencial
+        // (fk_refresh_tokens_replaced_by, auto-referencia en replaced_by_token_id): el hijo debe
+        // existir como fila antes de que el padre pueda apuntarle — MySQL/InnoDB valida cada FK
+        // en el propio saveAndFlush(), no de forma diferida al commit (a diferencia de
+        // PostgreSQL). Actualizar primero el padre con replaced_by_token_id = child.id, cuando
+        // el hijo todavía no existe, viola esa FK.
+        jpaRepository.saveAndFlush(RefreshTokenPersistenceMapper.toNewJpa(newChild));
+
         RefreshTokenJpaEntity parentEntity = jpaRepository.findById(revokedParent.id().toString())
                 .orElseThrow(() -> new IllegalStateException(
                         "El RefreshToken padre debe existir ya en persistencia antes de rotar"));
         parentEntity.setRevokedAt(revokedParent.revokedAt().orElse(null));
         parentEntity.setReplacedByTokenId(revokedParent.replacedByTokenId().map(UUID::toString).orElse(null));
         jpaRepository.saveAndFlush(parentEntity);
-
-        jpaRepository.saveAndFlush(RefreshTokenPersistenceMapper.toNewJpa(newChild));
     }
 
     @Override
